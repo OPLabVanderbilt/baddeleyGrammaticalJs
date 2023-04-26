@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Baddeley</title>
+    <script src="https://unpkg.com/jspsych@7.2.1"></script>
+    <link href="https://unpkg.com/jspsych@7.2.1/css/jspsych.css" rel="stylesheet" type="text/css" />
+    <script src="https://unpkg.com/@jspsych/plugin-browser-check@1.0.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-preload@1.1.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-button-response@1.1.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.0"></script>
+    <script src="https://unpkg.com/@jspsych/plugin-fullscreen@1.0.0"></script>
+    <script src="./trials.js"></script>
+</head>
+
+<body></body>
+<script>
+
+    let chainLink = '' // Change this to link to another experiment after this
+    const ITI = 250
+
+    var jsPsych = initJsPsych({
+        on_finish: function () {
+            if (!chainLink == '') {
+                window.location = chainLink + "?id=" + sbjID + "&src=" + source + '&study=' + study
+            }
+        }
+    });
+
+    let study = jsPsych.data.getURLVariable('study')
+    if (study === undefined) {
+        study = 'unknown'
+    }
+    
+    // Make id
+    let sbjID = jsPsych.data.getURLVariable('id');
+    if (sbjID === undefined) {
+        sbjID = jsPsych.randomization.randomID(10)
+    }
+    
+    // Get source of participant
+    let source = jsPsych.data.getURLVariable('src')
+    if (source === undefined) {
+        source = 'unknown'
+    }
+    
+    // Timeline
+    var timeline = [];
+
+    timeline.push({
+        type: jsPsychBrowserCheck,
+        inclusion_function: (data) => {
+            return !data.mobile
+        },
+        exclusion_message: (data) => {
+            return `
+            <p>You must use a desktop/laptop computer to participate in this 
+            experiment.</p>
+            <p>Please restart the experiment on a desktop/laptop computer.</p>
+        `;
+        }
+    })
+    
+    // Enter full screen
+    timeline.push({
+        type: jsPsychFullscreen,
+        fullscreen_mode: true
+    })
+    
+    timeline.push({
+        type:jsPsychHtmlButtonResponse,
+        stimulus: `
+        <p>In the following test there are a number of short sentences each 
+        followed by a pair of letters (AB or BA).</p><p>The sentences claim to 
+        describe the order of the two letters.</p><p>They can do this in several 
+        different ways. Thus the order AB can be correctly described by saying 
+        either (1) A precedes B, or (2) B follows A, or (3) B does not precede A, 
+        or (4) A does not follow B.</p><p>All these are correct descriptions of 
+        the pair AB but are incorrect when applied to the other pair, BA.</p>
+        `,
+        choices: ['Continue']
+    })
+    
+    timeline.push({
+        type:jsPsychHtmlButtonResponse,
+        stimulus: `
+        <p>Your job is to read each sentence and to decide whether it is a true 
+        or false description of the letter pair which follows it.</p>
+        <p>If you think the sentence describes the letter pair correctly then
+        click the 'True' button,<br>
+        but if you think the sentence does not give a 
+        true description of the order of the letters, then click the 'False'
+        button</p>
+        `,
+        choices: ['Continue']
+    })
+    
+    timeline.push({
+        type:jsPsychHtmlButtonResponse,
+        stimulus: `
+        <p><p>A follows B: &emsp;<b>BA</b></p><br>
+        `,
+        choices: ['True', 'False'],
+        prompt: `<br>Here you should click 'True' because A does follow B in the 
+        pair BA.`
+    })
+    
+    timeline.push({
+        type:jsPsychHtmlButtonResponse,
+        stimulus: `
+        <p><p>B precedes A: &emsp;<b>AB</b></p><br>
+        `,
+        choices: ['True', 'False'],
+        prompt: `<br>Here you should click 'False' because B does not precede A
+        (B does not appear before A).`
+    })
+    
+    timeline.push({
+        type:jsPsychHtmlButtonResponse,
+        stimulus: `
+        <p>Now try some practice problems</p>
+        `,
+        choices: ['Continue']
+    })
+    
+    timeline.push({
+        type:jsPsychHtmlButtonResponse,
+        stimulus: `
+        <p><p>A is followed by B: &emsp;<b>AB</b></p><br>
+        `,
+        choices: ['True', 'False'],
+        on_finish: function (data) {
+            data.Corr = data.response === 0
+        }
+    })
+    
+    timeline.push({
+        type: jsPsychHtmlKeyboardResponse,
+        choices: ["NO_KEYS"],
+        trial_duration: 750,
+        response_ends_trial: false,
+        stimulus: function() {
+            if (jsPsych.data.get().last(1).values()[0].Corr) {
+                return '<h1 style="color: green;font-size:60px">CORRECT!</h1>'
+                } else {
+                return '<h1 style="color: red;font-size:60px">INCORRECT</h1>'
+                }
+        }
+    })
+    
+    timeline.push({
+        type:jsPsychHtmlButtonResponse,
+        stimulus: `
+        <p><p>B is not followed by A: &emsp;<b>BA</b></p><br>
+        `,
+        choices: ['True', 'False'],
+        on_finish: function (data) {
+            data.Corr = data.response === 1
+        }
+    })
+    
+    timeline.push({
+        type: jsPsychHtmlKeyboardResponse,
+        choices: ["NO_KEYS"],
+        trial_duration: 750,
+        response_ends_trial: false,
+        stimulus: function() {
+            if (jsPsych.data.get().last(1).values()[0].Corr) {
+                return '<h1 style="color: green;font-size:60px">CORRECT!</h1>'
+            } else {
+                return '<h1 style="color: red;font-size:60px">INCORRECT</h1>'
+            }
+        }
+    })
+    
+    timeline.push({
+        type:jsPsychHtmlButtonResponse,
+        stimulus: `<p>You will have 90 seconds to complete as many problems as
+        you can</p>`,
+        choices: ['Click to begin the Task'],
+        on_finish: function (data) {
+            jsPsych.data.addProperties({ StartTime: Date.now() })
+        }
+    })
+    
+    for(let trial of trials) {
+      
+        timeline.push({
+            type: jsPsychHtmlButtonResponse,
+            stimulus: trial.Stim,
+            choices: ['True', 'False'],
+            data: {
+                Trial: trial.Trial,
+                CorrRes: trial.CorrRes,
+                TestTrial: true,
+                SbjID: sbjID
+            },
+        on_finish: function (data) {
+            if (data.response === 0) {data.response = 'True'}
+            if (data.response === 1) {data.response = 'False'}
+            data.Corr = data.response == data.CorrRes,
+            // Calculate time since start
+            data.TimeSinceStart = (Date.now() - data.StartTime) / 1000
+            console.log(data.TimeSinceStart)
+            if (data.TimeSinceStart > 90) {
+                jsPsych.endCurrentTimeline()   
+            }
+        }
+      })
+    }
+    
+    // Exit fullscreen
+    timeline.push({
+        type: jsPsychFullscreen,
+        fullscreen_mode: false
+    })
+    
+    // End card
+    timeline.push({
+        type: jsPsychHtmlButtonResponse,
+        stimulus: `
+            <p>You have completed this test, good job!</p>
+        `,
+        choices: ['Click here to continue'],
+    });
+    
+    // Run
+    jsPsych.run(timeline);
+</script>
+
+</html>
